@@ -21,6 +21,11 @@ public class ChnTools {
     @Option(name = "-apkpath", usage = "spec apk version path")
     private String inApkPath;
 
+    @Option(name = "-iconPath")
+    private String iconPath;
+
+    @Option(name = "-provider", usage = "provider wnl simple default wnl")
+    private String provider = "wnl";
 
     @Option(name = "-chnlist", usage = "chn batch list file")
     private String chnFile;
@@ -67,32 +72,7 @@ public class ChnTools {
             }
         }
 
-
-        File apkFile = new File(base + inApk);
-        if (!apkFile.exists()
-                || !apkFile.canRead()) {
-            throw new RuntimeException("-apk can't open");
-        }
-
-        if (StringUtils.isEmpty(chn)) {
-            throw new RuntimeException("chn can't be null");
-        }
-
-
-        File outFile = File.createTempFile("chn", "apk");
-        FileUtils.copyFile(apkFile, outFile);
-        ApkUtils.addChnInfoToApk(outFile, chn, "");
-        if (!StringUtils.isEmpty(logo)) {
-            File logoFile = new File(logo);
-            if (!logoFile.exists()
-                    || !logoFile.canRead()) {
-                throw new RuntimeException("logo can't be found");
-            }
-            ApkUtils.addChnLogoToApk(outFile, logoFile);
-        }
-
-        File singedFile = new File("singed.apk");
-        ApkUtils.signApk(outFile, singedFile);
+        throw new RuntimeException("   不知道你要干嘛");
     }
 
 
@@ -193,7 +173,10 @@ public class ChnTools {
             if (parts.length == 2) {
                 chnData = parts[0];
                 if (!StringUtils.isEmpty(parts[1])) {
-                    logoFile = new File(new File(base), "logo/" + parts[1]);
+                    if (StringUtils.isEmpty(iconPath)) {
+                        this.iconPath = base;
+                    }
+                    logoFile = new File(new File(iconPath), "logo/" + parts[1]);
                     if (!logoFile.exists()) {
                         logoFile = null;
                     }
@@ -215,13 +198,34 @@ public class ChnTools {
             outFile.getParentFile().mkdirs();
         }
         FileUtils.copyFile(file, outFile2);
-        ApkUtils.addChnInfoToApk(outFile2, chnData, "");
-        if (logoFile != null && logoFile.exists() && logoFile.canRead()) {
-            ApkUtils.addChnLogoToApk(outFile2, logoFile);
+        if ("wnl".equals(provider)) {
+            ApkUtils.addChnInfoToApk(outFile2, chnData, "");
+
+            if (logoFile != null && logoFile.exists() && logoFile.canRead()) {
+                ApkUtils.addChnLogoToApk(outFile2, logoFile, "channel_ad.png");
+
+            }
+            ApkUtils.signApk(outFile2, outFile);
+            ApkUtils.zipAlign(outFile, retFile);
+        } else if ("simple".equals(provider)) {
+            MCPTool.write(outFile2, chnData, "wnl.channel");
+            if (logoFile != null && logoFile.exists() && logoFile.canRead()) {
+                ApkUtils.addChnLogoToApk(outFile2, logoFile, "splash_logo.png");
+                ApkUtils.signApk(outFile2, outFile);
+                ApkUtils.zipAlign(outFile, retFile);
+            }
+        } else {
+            throw new RuntimeException("unknow provider for package channel!");
         }
-        ApkUtils.signApk(outFile2, outFile);
-        //zip对齐
-        ApkUtils.zipAlign(outFile, retFile);
+
+        /**
+         * 如果添加了闪屏都需要签名和ZipAlign
+         *
+         *
+         *
+         * 如果不添加的话则简版不需要ZipAlign
+         */
+
     }
 
 

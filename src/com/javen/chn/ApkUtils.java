@@ -50,8 +50,8 @@ public class ApkUtils {
      * @param apkFile
      * @param logoFile
      */
-    public static void addChnLogoToApk(File apkFile, File logoFile) throws InterruptedException, IOException, AndrolibException {
-        insertFileToApk(apkFile, "assets/channel_ad.png", logoFile);
+    public static void addChnLogoToApk(File apkFile, File logoFile,String name) throws InterruptedException, IOException, AndrolibException {
+        insertFileToApk(apkFile, "assets/"+name, logoFile);
     }
 
     /**
