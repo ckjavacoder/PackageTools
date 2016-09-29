@@ -14,10 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.*;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 
 /**
@@ -50,9 +47,41 @@ public class ApkUtils {
      * @param apkFile
      * @param logoFile
      */
-    public static void addChnLogoToApk(File apkFile, File logoFile,String name) throws InterruptedException, IOException, AndrolibException {
-        insertFileToApk(apkFile, "assets/"+name, logoFile);
+    public static void addChnLogoToApk(File apkFile, File logoFile, String name) throws InterruptedException, IOException, AndrolibException {
+        insertFileToApk(apkFile, "assets/" + name, logoFile);
     }
+
+    public static void removeSignFile(File apk) throws AndrolibException, IOException, InterruptedException {
+        AndrolibResources androlibResources = new AndrolibResources();
+        File aaptBinaryFile = androlibResources.getAaptBinaryFile();
+        List<String> cmd = new ArrayList<String>();
+        cmd.add(aaptBinaryFile.getAbsolutePath());
+        cmd.add("r");
+        cmd.add(apk.getAbsolutePath());
+        cmd.add("META-INF/CERT.RSA");
+        cmd.add("META-INF/CERT.SF");
+        cmd.add("META-INF/MANIFEST.MF");
+
+        Logger.logD("InsertFileToApk args:" + Arrays.toString(cmd.toArray()));
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        pb.redirectErrorStream(true);
+        Process ps = pb.start();
+        InputStream inputStream = ps.getInputStream();
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+        String line = null;
+        while ((line = br.readLine()) != null) {
+            Logger.logD(line);
+            System.out.println(line);
+        }
+
+
+        int retValue = ps.waitFor();
+        if (retValue != 0) {
+            throw new RuntimeException("fuck...");
+        }
+    }
+
 
     /**
      * 添加文件到APK
@@ -73,6 +102,7 @@ public class ApkUtils {
         List<String> cmd = new ArrayList<String>();
         cmd.add(aaptBinaryFile.getAbsolutePath());
         cmd.add("a");
+        cmd.add("-v");
         cmd.add(apkFile.getAbsolutePath());
         cmd.add(targetPath);
 
@@ -86,6 +116,7 @@ public class ApkUtils {
         String line = null;
         while ((line = br.readLine()) != null) {
             Logger.logD(line);
+            System.out.println(line);
         }
         ps.waitFor();
         FileUtils.forceDeleteOnExit(workDir);
@@ -95,10 +126,11 @@ public class ApkUtils {
     public static String SIGN_ALIAS = "Owen";
     public static String SIGN_PWD = "killers8Y";
 
+
     /**
      * 对APk进行签名
      */
-    public static void signApk(File apkFile, File signedApk) throws Exception {
+    public static void signApk(File apkFile, File signedApk, HashMap<String, File> stringFileHashMap) throws Exception {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         InputStream resourceAsStream = ApkUtils.class.getClassLoader().getResourceAsStream("com/javen/chn/codesign.keystore");
         keyStore.load(resourceAsStream,
@@ -114,6 +146,11 @@ public class ApkUtils {
                 return true;
             }
         });
+        if (stringFileHashMap != null && !stringFileHashMap.isEmpty()) {
+            for (Map.Entry<String, File> stringFileEntry : stringFileHashMap.entrySet()) {
+                sb.writeFile(stringFileEntry.getValue(), stringFileEntry.getKey());
+            }
+        }
         FileUtils.forceDeleteOnExit(apkFile);
         sb.close();
         sb.cleanUp();

@@ -9,6 +9,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.UUID;
 
 public class ChnTools {
 
@@ -197,22 +198,32 @@ public class ChnTools {
         if (!outFile.getParentFile().exists()) {
             outFile.getParentFile().mkdirs();
         }
+        FileUtils.forceDeleteOnExit(outFile2);
         FileUtils.copyFile(file, outFile2);
+        HashMap<String, File> stringFileHashMap = new HashMap<>();
         if ("wnl".equals(provider)) {
-            ApkUtils.addChnInfoToApk(outFile2, chnData, "");
 
+            File cn = File.createTempFile(UUID.randomUUID().toString(), ".chndata");
+            File cn2 = File.createTempFile(UUID.randomUUID().toString(), ".chndata");
+            FileUtils.writeStringToFile(cn, chnData);
+            FileUtils.writeStringToFile(cn2, "0");
+
+            stringFileHashMap.put("assets/cn", cn);
+            stringFileHashMap.put("assets/cn2", cn2);
             if (logoFile != null && logoFile.exists() && logoFile.canRead()) {
-                ApkUtils.addChnLogoToApk(outFile2, logoFile, "channel_ad.png");
-
+                stringFileHashMap.put("assets/channel_ad.png", logoFile);
             }
-            ApkUtils.signApk(outFile2, outFile);
+            ApkUtils.signApk(outFile2, outFile, stringFileHashMap);
             ApkUtils.zipAlign(outFile, retFile);
+
         } else if ("simple".equals(provider)) {
             MCPTool.write(outFile2, chnData, "wnl.channel");
             if (logoFile != null && logoFile.exists() && logoFile.canRead()) {
-                ApkUtils.addChnLogoToApk(outFile2, logoFile, "splash_logo.png");
-                ApkUtils.signApk(outFile2, outFile);
+                stringFileHashMap.put("assets/splash_logo.png", logoFile);
+                ApkUtils.signApk(outFile2, outFile, stringFileHashMap);
                 ApkUtils.zipAlign(outFile, retFile);
+            } else {
+                FileUtils.moveFile(outFile2, retFile);
             }
         } else {
             throw new RuntimeException("unknow provider for package channel!");
