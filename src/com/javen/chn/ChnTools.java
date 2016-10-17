@@ -1,15 +1,15 @@
 package com.javen.chn;
 
+import com.sun.deploy.net.URLEncoder;
+import com.sun.xml.internal.stream.buffer.sax.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.UUID;
+import java.net.URLDecoder;
+import java.util.*;
 
 public class ChnTools {
 
@@ -91,6 +91,25 @@ public class ChnTools {
         mapFile.put("小米预装", "release-日历-小米手机预装-所有广告-换图标-");
         mapFile.put("乐视预装", "release-日历-乐视手机预装-所有广告-换图标-");
         mapFile.put("联想", "release-万年历-联想市场-所有广告-");
+        try {
+            java.util.Properties properties = new java.util.Properties();
+            String path = ChnTools.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+            path = URLDecoder.decode(path, "utf-8");
+            System.out.println("Path:" + path);
+            properties.load(new FileInputStream(new File(new File(path).getParentFile(), "a.prop")));
+            Set<Map.Entry<Object, Object>> entries = properties.entrySet();
+            for (Map.Entry<Object, Object> entry : entries) {
+                mapFile.put(new String(entry.getKey().toString().getBytes("ISO-8859-1"),"UTF-8"), new String(entry.getValue().toString().getBytes("ISO-8859-1"),"UTF-8"));
+                System.out.println("add:" + new String(entry.getKey().toString().getBytes("ISO-8859-1"),"UTF-8") + ":" + new String(entry.getValue().toString().getBytes("ISO-8859-1"),"UTF-8"));
+            }
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void handleBatchChannelData(File apkpath, String chn) throws Exception {
